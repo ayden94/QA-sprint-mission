@@ -84,6 +84,10 @@ async function Board_findUnique(id: string) {
 		select: selectFind,
 	});
 
+	if (!board) {
+		throw new Error('게시글이 존재하지 않습니다');
+	}
+
 	return board;
 }
 

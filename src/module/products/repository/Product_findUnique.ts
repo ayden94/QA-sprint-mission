@@ -1,14 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { User_findUnique } from '../../user/repository/User_findUnique';
 import { addIsFavorite } from '../../../helper/addIsFavorite';
+import userRepository from '../../user/user.repository';
 
 const prisma = new PrismaClient();
 
 export async function Product_findUnique(req: Request, res: Response) {
 	const { id } = req.params;
+	const email = req.body.email;
 
-	const user = await User_findUnique(req);
+	const user = await userRepository.User_findUnique(email);
 
 	const product = await prisma.product.findUnique({
 		where: { id },

@@ -1,13 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import { ownerIdFormatter } from '../../../helper/ownerIdFormatter';
-import { User_findUnique } from '../../user/repository/User_findUnique';
+
 import { addIsFavorite } from '../../../helper/addIsFavorite';
+import userRepository from '../../user/user.repository';
 
 const prisma = new PrismaClient();
 
 export async function Product_findMany(req: Request, res: Response) {
-	const user = await User_findUnique(req);
+	const email = req.body.email;
+
+	const user = await userRepository.User_findUnique(email);
 
 	const {
 		offset = '0',

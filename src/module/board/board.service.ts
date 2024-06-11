@@ -1,16 +1,14 @@
 import { Request, Response } from 'express';
-
 import { Comment_create_onBoard } from '../comment/repository/Comment_create';
-import { Comment_findMany_onBoard } from '../comment/repository/Comment_findMany';
 import {
 	CreateBoardProps,
 	FindBoardsProps,
 	PatchBoardProps,
 } from './board.types';
 import { isLiked } from '../../helper/isLiked';
-import { User_findUnique } from '../user/repository/User_findUnique';
 import boardRepository from './board.repository';
 import { boardOrderBy } from '../../helper/boardOrderBy';
+import userRepository from '../user/user.repository';
 
 async function getBoardList(findBoardsProps: FindBoardsProps) {
 	const orderBy = boardOrderBy(findBoardsProps.order);
@@ -54,11 +52,17 @@ async function updateBoard(patchBoardProps: PatchBoardProps, id: string) {
 }
 
 async function likeBoard(boardId: string, userEmail: string) {
-	const user = await User_findUnique(userEmail);
+	const user = await userRepository.User_findUnique(userEmail);
 
 	if (await isLiked(boardId, user)) {
 		throw new Error('이미 좋아요를 누르셨어요');
 	} else {
+		const board = await boardRepository.Board_findUnique(boardId);
+
+		if (board?.writer.id === user?.id) {
+			throw new Error('자신의 댓글에는 좋아요를 누를 수 없습니다');
+		}
+
 		const result = await boardRepository.Board_likes(boardId, userEmail);
 
 		return result;
@@ -66,7 +70,7 @@ async function likeBoard(boardId: string, userEmail: string) {
 }
 
 async function dislikeBoard(boardId: string, userEmail: string) {
-	const user = await User_findUnique(userEmail);
+	const user = await userRepository.User_findUnique(userEmail);
 
 	if (!(await isLiked(boardId, user))) {
 		throw new Error('이미 좋아요를 해제하셨어요');
@@ -77,12 +81,8 @@ async function dislikeBoard(boardId: string, userEmail: string) {
 	}
 }
 
-function createComment(req: Request, res: Response) {
+async function createComment(req: Request, res: Response) {
 	Comment_create_onBoard(req, res);
-}
-
-export function getCommentList(req: Request, res: Response) {
-	Comment_findMany_onBoard(req, res);
 }
 
 const boardService = {
@@ -92,7 +92,6 @@ const boardService = {
 	dislikeBoard,
 	getBoard,
 	getBoardList,
-	getCommentList,
 	likeBoard,
 	updateBoard,
 };

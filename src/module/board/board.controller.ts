@@ -1,31 +1,29 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import boardService from './board.service';
 import { authChecker } from '../../middleware/authChecker';
 import { requestChecker } from '../../middleware/requestChecker';
 import { CreateBoard, PatchBoard } from './board.structs';
-import { FindMany, Uuid } from '../../helper/Structs';
+import { Uuid } from '../../helper/Structs';
 import { FindBoardsProps } from './board.types';
+import { GetCommentProps } from '../comment/comment.types';
+import commentService from '../comment/comment.service';
 
 const boardRoutes = Router();
 
-boardRoutes.get(
-	'/',
-	requestChecker('query', FindMany),
-	async (req: Request, res: Response) => {
-		const {
-			offset = '0',
-			limit = '10',
-			order = 'recent',
-			search = '',
-		} = req.query;
+boardRoutes.get('/', async (req: Request, res: Response) => {
+	const {
+		offset = '0',
+		limit = '10',
+		order = 'recent',
+		search = '',
+	} = req.query;
 
-		const findBoardsProps = { offset, limit, order, search } as FindBoardsProps;
+	const findBoardsProps = { offset, limit, order, search } as FindBoardsProps;
 
-		const result = await boardService.getBoardList(findBoardsProps);
+	const result = await boardService.getBoardList(findBoardsProps);
 
-		res.send(result);
-	},
-);
+	res.send(result);
+});
 
 boardRoutes.post(
 	'/',
@@ -44,12 +42,16 @@ boardRoutes.post(
 boardRoutes.get(
 	'/:id',
 	requestChecker('params', Uuid),
-	async (req: Request, res: Response) => {
-		const { id } = req.params;
+	async (req: Request, res: Response, next: NextFunction) => {
+		try {
+			const { id } = req.params;
 
-		const result = await boardService.getBoard(id);
+			const result = await boardService.getBoard(id);
 
-		res.send(result);
+			res.send(result);
+		} catch (err) {
+			next(err);
+		}
 	},
 );
 
@@ -95,25 +97,44 @@ boardRoutes.patch(
 	},
 );
 
-boardRoutes.get('/:id/comments', boardService.getCommentList);
-boardRoutes.post('/:id/comments', authChecker, boardService.createComment);
-
-boardRoutes.post(
+boardRoutes.get(
 	'/:id/comments',
-	authChecker,
 	requestChecker('params', Uuid),
 	async (req: Request, res: Response) => {
 		const { id } = req.params;
-		const { email } = req.cookies;
+		const getCommentProps = req.query as GetCommentProps;
 
-		const result = await boardService.likeBoard(id, email);
+		const result = await commentService.getCommentList(
+			getCommentProps,
+			id,
+			'boardId',
+		);
 
 		res.send(result);
 	},
 );
+boardRoutes.post('/:id/comments', authChecker, boardService.createComment);
+
+boardRoutes.post(
+	'/:id/likes',
+	authChecker,
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response, next: NextFunction) => {
+		try {
+			const { id } = req.params;
+			const { email } = req.cookies;
+
+			const result = await boardService.likeBoard(id, email);
+
+			res.send(result);
+		} catch (err) {
+			next(err);
+		}
+	},
+);
 
 boardRoutes.delete(
-	'/:id/comments',
+	'/:id/likes',
 	authChecker,
 	requestChecker('params', Uuid),
 	async (req: Request, res: Response) => {

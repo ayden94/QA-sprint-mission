@@ -40,8 +40,6 @@ app.use('/comments', commentRoutes);
 app.use('/images', imageRoutes);
 app.use('/docs', swaggerDocsRoute);
 
-app.use(prismaErrorHandler);
-
 const server = http.createServer(app); // http 서버 (3000)
 
 export const wss = new WebSocket.Server({ server }); // websocket 서버 (3000) - 둘 다 돌리기
@@ -80,6 +78,8 @@ wss.on('connection', (ws: ExtWebSocket) => {
 		}
 	});
 });
+
+app.use(prismaErrorHandler);
 
 server.listen(process.env.PORT || 3000, () => {
 	console.log('Server Started');
