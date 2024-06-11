@@ -1,94 +1,65 @@
-import { assert } from 'superstruct';
-import { PrismaClient } from '@prisma/client';
-import { Request, Response } from 'express';
-import { RefreshToken, SignIn, SignUp } from './auth.structs';
 import pkg from 'bcryptjs';
-import * as dotenv from 'dotenv';
-import {
-	decodeToken,
-	generateAccessToken,
-	generateRefreshToken,
-	verifyToken,
-} from '../../middleware/jwt';
+import DotenvFlow from 'dotenv-flow';
+import { decodeToken, generateToken, verifyToken } from '../../middleware/jwt';
+import { CreateUserProps } from '../user/user.types';
+import userRepository from '../user/user.repository';
 
-dotenv.config();
+DotenvFlow.config({
+	path: './',
+	node_env: process.env.NODE_ENV || 'development',
+});
 
 const { genSalt, hash, compare } = pkg;
 
-const prisma = new PrismaClient();
-
-export async function signUp(req: Request, res: Response) {
-	// 제대로 들어왔나 확인
-	assert(req.body, SignUp);
-
-	// 구조 분해
-	const { email, password, nickname } = req.body;
-
+async function signUp({ email, password, nickname }: CreateUserProps) {
 	// salt + hash
 	const salt = await genSalt();
 	const hashedPassword = await hash(password, salt);
 
-	await prisma.user.create({
-		data: { email, password: hashedPassword, nickname },
+	await userRepository.User_create({
+		email,
+		password: hashedPassword,
+		nickname,
 	});
 
-	const accessToken = generateAccessToken({ email, nickname });
-	const refreshToken = generateRefreshToken({ email, nickname });
-
-	res.status(201).send({ accessToken, refreshToken });
+	return {
+		accessToken: generateToken(email, nickname, 'access'),
+		refreshToken: generateToken(email, nickname, 'refresh'),
+	};
 }
 
-export async function signIn(req: Request, res: Response) {
-	assert(req.body, SignIn);
-
-	// check
-	const { email, password } = req.body;
-
-	const user = await prisma.user.findUnique({ where: { email } });
+async function signIn({ email, password }: Omit<CreateUserProps, 'nickname'>) {
+	const user = await userRepository.User_findUnique(email);
 
 	if (user && (await compare(password, user.password))) {
-		const accessToken = generateAccessToken({ email, nickname: user.nickname });
-		const refreshToken = generateRefreshToken({
-			email,
-			nickname: user.nickname,
-		});
-		res.status(200).send({ accessToken, refreshToken });
+		return {
+			accessToken: generateToken(email, user.nickname, 'access'),
+			refreshToken: generateToken(email, user.nickname, 'refresh'),
+		};
+	} else if (!user) {
+		throw new Error('이메일을 다시 확인해주세요');
 	} else {
-		res.sendStatus(401);
+		throw new Error('비밀번호가 일치하지 않습니다');
 	}
 }
 
-export async function refreshToken(req: Request, res: Response) {
-	assert(req.body, RefreshToken);
-
-	const oldRefreshToken = req.body.refreshToken;
-
+async function refreshToken(oldRefreshToken: string) {
 	const decoded = decodeToken(oldRefreshToken, process.env.JWT_SECRET_REFRESH!);
 	const isOk = verifyToken(decoded);
 
 	if (isOk) {
-		const accessToken = generateAccessToken({
-			email: decoded.email,
-			nickname: decoded.nickname,
-		});
+		const accessToken = generateToken(
+			decoded.email,
+			decoded.nickname,
+			'access',
+		);
 
-		res.status(200).send({ accessToken });
+		return accessToken;
 	} else {
-		res.status(400).send({ message: '리프레시 토큰이 만료되었습니다 ' });
+		throw new Error('리프레시 토큰이 만료되었습니다');
 	}
 }
 
-export async function signOut(req: Request, res: Response) {
-	const email = req.cookies.email;
-	const user = await prisma.user.findUnique({ where: { email } });
+const authService = { signUp, signIn, refreshToken };
 
-	if (user) {
-		res
-			.status(201)
-			.cookie('accessToken', '', { maxAge: 0, httpOnly: true })
-			.cookie('refreshToken', '', { maxAge: 0, httpOnly: true })
-			.send('로그아웃');
-	} else {
-		res.sendStatus(401);
-	}
-}
+export default authService;

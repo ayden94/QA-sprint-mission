@@ -1,7 +1,47 @@
-import { Router } from 'express';
-import { refreshToken, signIn, signOut, signUp } from './auth.service';
+import { Router, Request, Response } from 'express';
+import authService from './auth.service';
+import { requestChecker } from '../../middleware/requestChecker';
+import { RefreshToken, SignIn, SignUp } from './auth.structs';
 
 const authRoutes = Router();
+
+authRoutes.post(
+	'/signup',
+	requestChecker('body', SignUp),
+	async (req: Request, res: Response) => {
+		const { email, password, nickname } = req.body;
+
+		const result = await authService.signUp({ email, password, nickname });
+
+		res.status(201).send(result);
+	},
+);
+
+authRoutes.post(
+	'/signIn',
+	requestChecker('body', SignIn),
+	async (req: Request, res: Response) => {
+		const { email, password } = req.body;
+
+		const result = await authService.signIn({ email, password });
+
+		res.send(result);
+	},
+);
+
+authRoutes.post(
+	'/refresh-token',
+	requestChecker('body', RefreshToken),
+	async (req: Request, res: Response) => {
+		const { refreshToken } = req.body;
+
+		const result = await authService.refreshToken(refreshToken);
+
+		res.send(result);
+	},
+);
+
+export default authRoutes;
 
 /**
  * @openapi
@@ -68,10 +108,3 @@ const authRoutes = Router();
  *                 accessToken:
  *                   type: string
  */
-
-authRoutes.route('/signUp').post(signUp);
-authRoutes.route('/signIn').post(signIn);
-authRoutes.route('/signOut').delete(signOut);
-authRoutes.route('/refresh-token').post(refreshToken);
-
-export default authRoutes;

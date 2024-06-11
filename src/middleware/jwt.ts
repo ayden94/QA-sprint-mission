@@ -1,45 +1,31 @@
 import pkg from 'jsonwebtoken';
 import { NextFunction, Request, Response } from 'express';
+import DotenvFlow from 'dotenv-flow';
 
 const { sign, verify } = pkg;
 
+DotenvFlow.config({
+	path: './',
+	node_env: process.env.NODE_ENV || 'development',
+});
+
 // 토큰 발급
-export function generateAccessToken({
-	nickname,
-	email,
-}: {
-	email: string;
-	nickname: string;
-}) {
-	const accessToken = sign(
-		{
-			nickname,
-			email,
-			exp: Date.now() + 1000 * 60 * 60,
-		},
-		process.env.JWT_SECRET!,
-	);
+export function generateToken(
+	email: string,
+	nickname: string,
+	type: 'access' | 'refresh',
+) {
+	const hour = Date.now() + 1000 * 60 * 60;
+	const month = hour * 24 * 30;
+	const exp = type === 'access' ? hour : month;
 
-	return accessToken;
-}
+	const secretKey = process.env[
+		`JWT_SECRET${type === 'access' ? '' : '_REFRESH'}`
+	] as string;
 
-export function generateRefreshToken({
-	nickname,
-	email,
-}: {
-	email: string;
-	nickname: string;
-}) {
-	const refreshToken = sign(
-		{
-			nickname,
-			email,
-			exp: Date.now() + 1000 * 60 * 60 * 24 * 30,
-		},
-		process.env.JWT_SECRET_REFRESH!,
-	);
+	const token = sign({ nickname, email, exp }, secretKey);
 
-	return refreshToken;
+	return token;
 }
 
 type Decoded = {

@@ -3,11 +3,29 @@ import boardService from './board.service';
 import { authChecker } from '../../middleware/authChecker';
 import { requestChecker } from '../../middleware/requestChecker';
 import { CreateBoard, PatchBoard } from './board.structs';
-import { Uuid } from '../../helper/Structs';
+import { FindMany, Uuid } from '../../helper/Structs';
+import { FindBoardsProps } from './board.types';
 
 const boardRoutes = Router();
 
-boardRoutes.get('/', boardService.getBoardList);
+boardRoutes.get(
+	'/',
+	requestChecker('query', FindMany),
+	async (req: Request, res: Response) => {
+		const {
+			offset = '0',
+			limit = '10',
+			order = 'recent',
+			search = '',
+		} = req.query;
+
+		const findBoardsProps = { offset, limit, order, search } as FindBoardsProps;
+
+		const result = await boardService.getBoardList(findBoardsProps);
+
+		res.send(result);
+	},
+);
 
 boardRoutes.post(
 	'/',

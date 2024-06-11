@@ -1,99 +1,55 @@
-import { PrismaClient } from '@prisma/client';
-import { assert } from 'superstruct';
-import { UpdateUser, UpdateUserPassword } from './user.structs';
-import { authChecker } from '../../helper/authChecker';
-import { Request, Response } from 'express';
 import pkg from 'bcryptjs';
-import { User_findUnique } from './repository/User_findUnique';
+import userRepository from './user.repository';
+import { PatchUserPasswordProps, PatchUserProps } from './user.types';
 
-const prisma = new PrismaClient();
+async function getUser(email: string) {
+	const user = await userRepository.User_findUnique(email);
 
-export async function getUser(req: Request, res: Response) {
-	authChecker(req);
-
-	const user = await User_findUnique(req);
-
-	res.send(user);
+	return user;
 }
 
-export async function updateUser(req: Request, res: Response) {
-	authChecker(req);
-	assert(req.body, UpdateUser);
+async function updateUser(email: string, patchUserProps: PatchUserProps) {
+	const updatedUser = await userRepository.User_Update(email, patchUserProps);
 
-	const updateUser = await prisma.user.update({
-		where: { email: req.cookies.email },
-		data: req.body,
-		select: {
-			id: true,
-			nickname: true,
-			image: true,
-			createdAt: true,
-			updatedAt: true,
-		},
-	});
-
-	res.send(updateUser);
+	return updatedUser;
 }
 
-export async function updateUserPassword(req: Request, res: Response) {
-	authChecker(req);
-	assert(req.body, UpdateUserPassword);
-
+async function updateUserPassword(
+	email: string,
+	patchUserPasswordProps: PatchUserPasswordProps,
+) {
 	const { genSalt, hash } = pkg;
-	const { password } = req.body;
+	const { password } = patchUserPasswordProps;
 
 	// salt + hash
 	const salt = await genSalt();
 	const hashedPassword = await hash(password, salt);
 
-	await prisma.user.update({
-		where: { email: req.cookies.email },
-		data: {
-			password: hashedPassword,
-		},
+	const updatedUser = await userRepository.User_Update(email, {
+		password: hashedPassword,
 	});
 
-	res.sendStatus(204);
+	return updatedUser;
 }
 
-export async function getUserOwnedProduct(req: Request, res: Response) {
-	authChecker(req);
+async function getUserOwnedProduct(email: string) {
+	const ownedProduct = await userRepository.User_ownedProduct(email);
 
-	const ownedProduct = await prisma.product.findMany({
-		where: {
-			ownerId: {
-				// 여기는 1:N 관계라 some을 안 쓰고
-				email: req.cookies.email,
-			},
-		},
-	});
-
-	res.send(ownedProduct);
+	return ownedProduct;
 }
 
-export async function getUserFavoriteProduct(req: Request, res: Response) {
-	authChecker(req);
+async function getUserFavoriteProduct(email: string) {
+	const favoriteProducts = await userRepository.User_favoriteProduct(email);
 
-	const favoriteProduct = await prisma.product.findMany({
-		where: {
-			favoriteUser: {
-				// 여기는 M : N 관계라 some을 사용하나?
-				some: { email: req.cookies.email },
-			},
-		},
-	});
-
-	res.send(favoriteProduct);
+	return favoriteProducts;
 }
 
-// export async function deleteUser(req, res) {
-//   authChecker(req);
+const userService = {
+	getUser,
+	updateUser,
+	updateUserPassword,
+	getUserOwnedProduct,
+	getUserFavoriteProduct,
+};
 
-//   await prisma.user.delete({
-//     where: {
-//       email: req.email,
-//     },
-//   });
-
-//   res.sendStatus(204);
-// }
+export default userService;

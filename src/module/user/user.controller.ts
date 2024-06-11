@@ -1,13 +1,70 @@
-import { Router } from 'express';
-import {
-	getUser,
-	getUserFavoriteProduct,
-	getUserOwnedProduct,
-	updateUser,
-	updateUserPassword,
-} from './user.service';
+import { Router, Request, Response } from 'express';
+import userService from './user.service';
+import { authChecker } from '../../middleware/authChecker';
+import { requestChecker } from '../../middleware/requestChecker';
+import { UpdateUser, UpdateUserPassword } from './user.structs';
 
 const userRouters = Router();
+
+userRouters.get('/me', authChecker, async (req: Request, res: Response) => {
+	const { email } = req.cookies;
+
+	const result = await userService.getUser(email);
+
+	res.send(result);
+});
+
+userRouters.patch(
+	'/me',
+	authChecker,
+	requestChecker('body', UpdateUser),
+	async (req: Request, res: Response) => {
+		const { email } = req.cookies;
+		const patchUserProps = req.body;
+
+		const result = await userService.updateUser(email, patchUserProps);
+
+		res.send(result);
+	},
+);
+
+userRouters.patch(
+	'/me/password',
+	authChecker,
+	requestChecker('body', UpdateUserPassword),
+	async (req: Request, res: Response) => {
+		const { email } = req.cookies;
+		const patchUserProps = req.body;
+
+		const result = await userService.updateUserPassword(email, patchUserProps);
+
+		res.send(result);
+	},
+);
+
+userRouters.get(
+	'/me/products',
+	authChecker,
+	async (req: Request, res: Response) => {
+		const { email } = req.cookies;
+		const result = await userService.getUserOwnedProduct(email);
+
+		res.send(result);
+	},
+);
+
+userRouters.get(
+	'/me/favorites',
+	authChecker,
+	async (req: Request, res: Response) => {
+		const { email } = req.cookies;
+		const result = await userService.getUserFavoriteProduct(email);
+
+		res.send(result);
+	},
+);
+
+export default userRouters;
 
 /**
  * @openapi
@@ -57,12 +114,6 @@ const userRouters = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
  *
- */
-
-userRouters.route('/me').get(getUser).patch(updateUser);
-
-/**
- * @openapi
  * '/user/me/password':
  *   patch:
  *     tags:
@@ -88,12 +139,7 @@ userRouters.route('/me').get(getUser).patch(updateUser);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
- */
-
-userRouters.route('/me/password').patch(updateUserPassword);
-
-/**
- * @openapi
+ *
  * '/user/me/products':
  *   get:
  *     tags:
@@ -141,8 +187,3 @@ userRouters.route('/me/password').patch(updateUserPassword);
  *               $ref: '#/components/schemas/ErrorMessage'
  *
  */
-
-userRouters.route('/me/products').get(getUserOwnedProduct);
-userRouters.route('/me/favorites').get(getUserFavoriteProduct);
-
-export default userRouters;

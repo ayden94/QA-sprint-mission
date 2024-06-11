@@ -14,11 +14,13 @@ export const prismaErrorHandler = (
 				break;
 
 			default:
-				res.status(500).json({ error: 'Internal server error' });
+				res.status(500).send({ message: 'Internal server error' });
 				break;
 		}
 	} else if (err instanceof Prisma.PrismaClientValidationError) {
 		res.status(400).send({ message: err.message });
+	} else {
+		res.status(500).send({ message: err.message });
 	}
 
 	next();
