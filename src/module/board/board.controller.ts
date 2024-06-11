@@ -1,19 +1,114 @@
-import { Router } from 'express';
-
-import { asyncHandler } from '../asyncHandler';
-import {
-	createBoard,
-	createComment,
-	deleteBoard,
-	dislikeBoard,
-	getBoard,
-	getBoardList,
-	getCommentList,
-	likeBoard,
-	updateBoard,
-} from './board.service';
+import { Router, Request, Response } from 'express';
+import boardService from './board.service';
+import { authChecker } from '../../middleware/authChecker';
+import { requestChecker } from '../../middleware/requestChecker';
+import { CreateBoard, PatchBoard } from './board.structs';
+import { Uuid } from '../../helper/Structs';
 
 const boardRoutes = Router();
+
+boardRoutes.get('/', boardService.getBoardList);
+
+boardRoutes.post(
+	'/',
+	authChecker,
+	requestChecker('body', CreateBoard),
+	async (req: Request, res: Response) => {
+		const createBoardProps = req.body;
+		const { email } = req.cookies;
+
+		const result = await boardService.createBoard(createBoardProps, email);
+
+		res.send(result);
+	},
+);
+
+boardRoutes.get(
+	'/:id',
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response) => {
+		const { id } = req.params;
+
+		const result = await boardService.getBoard(id);
+
+		res.send(result);
+	},
+);
+
+boardRoutes.delete(
+	'/:id',
+	authChecker,
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response) => {
+		const { id } = req.params;
+
+		const result = await boardService.deleteBoard(id);
+
+		if (result) {
+			// 삭제가 잘 됐을 때
+			res.sendStatus(204);
+		} else {
+			// 삭제할 권한이 없을 때
+			res
+				.status(403)
+				.send({ error: 'You are not authorized to delete this Article' });
+		}
+	},
+);
+
+boardRoutes.patch(
+	'/:id',
+	authChecker,
+	requestChecker('body', PatchBoard),
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response) => {
+		const { id } = req.params;
+		const patchBoardProps = req.body;
+
+		const result = boardService.updateBoard(patchBoardProps, id);
+
+		if (result) {
+			res.send(result);
+		} else {
+			res
+				.status(403)
+				.send({ error: 'You are not authorized to update this Article' });
+		}
+	},
+);
+
+boardRoutes.get('/:id/comments', boardService.getCommentList);
+boardRoutes.post('/:id/comments', authChecker, boardService.createComment);
+
+boardRoutes.post(
+	'/:id/comments',
+	authChecker,
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response) => {
+		const { id } = req.params;
+		const { email } = req.cookies;
+
+		const result = await boardService.likeBoard(id, email);
+
+		res.send(result);
+	},
+);
+
+boardRoutes.delete(
+	'/:id/comments',
+	authChecker,
+	requestChecker('params', Uuid),
+	async (req: Request, res: Response) => {
+		const { id } = req.params;
+		const { email } = req.cookies;
+
+		const result = await boardService.dislikeBoard(id, email);
+
+		res.send(result);
+	},
+);
+
+export default boardRoutes;
 
 /**
  * @openapi
@@ -52,16 +147,7 @@ const boardRoutes = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/SearchBoardAll'
- */
-
-boardRoutes
-	.route('/')
-	.get(asyncHandler(getBoardList))
-	.post(asyncHandler(createBoard));
-boardRoutes.route('/comment');
-
-/**
- * @openapi
+ *
  * '/boards/{boardId}':
  *   get:
  *     tags:
@@ -142,15 +228,7 @@ boardRoutes.route('/comment');
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
- */
-boardRoutes
-	.route('/:id')
-	.get(asyncHandler(getBoard))
-	.delete(asyncHandler(deleteBoard))
-	.patch(asyncHandler(updateBoard));
-
-/**
- * @openapi
+ *
  * '/boards/{boardId}/comments':
  *   post:
  *     tags:
@@ -199,15 +277,6 @@ boardRoutes
  *             schema:
  *               $ref: '#/components/schemas/ErrorMessage'
  *
- */
-
-boardRoutes
-	.route('/:id/comments')
-	.post(asyncHandler(createComment))
-	.get(asyncHandler(getCommentList));
-
-/**
- * @openapi
  * '/boards/{boardId}/like':
  *   post:
  *     tags:
@@ -250,10 +319,3 @@ boardRoutes
  *               $ref: '#/components/schemas/ErrorMessage'
  *
  */
-
-boardRoutes
-	.route('/:id/like')
-	.post(asyncHandler(likeBoard))
-	.delete(asyncHandler(dislikeBoard));
-
-export default boardRoutes;

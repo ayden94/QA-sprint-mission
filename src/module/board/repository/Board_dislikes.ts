@@ -1,33 +1,34 @@
-import { Request, Response } from 'express';
-import { User_findUnique } from '../../user/repository/User_findUnique';
 import { PrismaClient } from '@prisma/client';
-import { isLiked } from '../../../helper/isLiked';
 
 const prisma = new PrismaClient();
 
-export async function Board_dislikes(req: Request, res: Response) {
-	const { boardId } = req.params;
-
-	const user = await User_findUnique(req);
-
-	// 액션에 따른 에러 핸들
-	if (!(await isLiked(boardId, user))) {
-		throw new Error('이미 좋아요가 해제되었어요');
-	}
-
-	await prisma.board.update({
+export async function Board_dislikes(id: string, email: string) {
+	const updatedBoard = await prisma.board.update({
 		where: {
-			id: boardId,
+			id,
 		},
 		data: {
 			favoriteUser: {
-				disconnect: { email: req.cookies.email },
+				disconnect: { email },
 			},
 			likeCount: {
 				decrement: 1,
 			},
 		},
+		select: {
+			id: true,
+			title: true,
+			content: true,
+			imageUrl: true,
+			createdAt: true,
+			writer: {
+				select: {
+					nickname: true,
+					id: true,
+				},
+			},
+		},
 	});
 
-	res.sendStatus(204);
+	return updatedBoard;
 }

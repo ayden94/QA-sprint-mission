@@ -9,7 +9,7 @@ import {
 	generateAccessToken,
 	generateRefreshToken,
 	verifyToken,
-} from '../../helper/jwt';
+} from '../../middleware/jwt';
 
 dotenv.config();
 

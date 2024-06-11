@@ -1,11 +1,8 @@
 import { PrismaClient } from '@prisma/client';
-import { Request, Response } from 'express';
 
 const prisma = new PrismaClient();
 
-export async function Board_findUnique(req: Request, res: Response) {
-	const { id } = req.params;
-
+export async function Board_findUnique(id: string) {
 	const board = await prisma.board.findUnique({
 		where: { id },
 		select: {
@@ -19,5 +16,5 @@ export async function Board_findUnique(req: Request, res: Response) {
 		},
 	});
 
-	res.send(board);
+	return board;
 }

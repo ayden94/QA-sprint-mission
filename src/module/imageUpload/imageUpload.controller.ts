@@ -118,7 +118,7 @@ imageRoutes.get('/presigned-url', async (req: Request, res: Response) => {
 // imageRoutes.post(
 // 	'',
 // 	upload.array('images', 10),
-// 	asyncHandler((req: Request, res: Response) => {
+// 	prismaErrorHandler((req: Request, res: Response) => {
 // 		try {
 // 			const fileList = req.files as Express.Multer.File[];
 

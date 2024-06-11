@@ -5,7 +5,7 @@ import authRoutes from './module/auth/auth.controller';
 import productRoutes from './module/products/products.controller';
 import boardRoutes from './module/board/board.controller';
 import commentRoutes from './module/comment/comment.controller';
-import { authValidate } from './helper/jwt';
+import { authValidate } from './middleware/jwt';
 import imageRoutes from './module/imageUpload/imageUpload.controller';
 import userRouters from './module/user/user.controller';
 
@@ -13,6 +13,7 @@ import http from 'http';
 import WebSocket from 'ws';
 import { swaggerDocsRoute } from './swagger/swagger';
 import DotenvFlow from 'dotenv-flow';
+import { prismaErrorHandler } from './middleware/prismaErrorHandler';
 
 DotenvFlow.config({
 	path: './',
@@ -38,6 +39,8 @@ app.use('/boards', boardRoutes);
 app.use('/comments', commentRoutes);
 app.use('/images', imageRoutes);
 app.use('/docs', swaggerDocsRoute);
+
+app.use(prismaErrorHandler);
 
 const server = http.createServer(app); // http 서버 (3000)
 

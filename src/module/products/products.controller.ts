@@ -10,7 +10,6 @@ import {
 	likeProduct,
 	updateProduct,
 } from './products.service';
-import { asyncHandler } from '../asyncHandler';
 
 const productRoutes = Router();
 
@@ -53,10 +52,7 @@ const productRoutes = Router();
  *               $ref: '#/components/schemas/SearchProductAll'
  */
 
-productRoutes
-	.route('/')
-	.get(asyncHandler(getProductList))
-	.post(asyncHandler(createProduct));
+productRoutes.route('/').get(getProductList).post(createProduct);
 
 /**
  * @openapi
@@ -144,9 +140,9 @@ productRoutes
 
 productRoutes
 	.route('/:id')
-	.get(asyncHandler(getProduct))
-	.patch(asyncHandler(updateProduct))
-	.delete(asyncHandler(deleteProduct));
+	.get(getProduct)
+	.patch(updateProduct)
+	.delete(deleteProduct);
 
 /**
  * @openapi
@@ -198,10 +194,7 @@ productRoutes
  *
  */
 
-productRoutes
-	.route('/:id/comments')
-	.post(asyncHandler(createComment))
-	.get(asyncHandler(getCommentList));
+productRoutes.route('/:id/comments').post(createComment).get(getCommentList);
 
 /**
  * @openapi
@@ -248,9 +241,6 @@ productRoutes
  *
  */
 
-productRoutes
-	.route('/:id/favorite')
-	.post(asyncHandler(likeProduct))
-	.delete(asyncHandler(dislikeProduct));
+productRoutes.route('/:id/favorite').post(likeProduct).delete(dislikeProduct);
 
 export default productRoutes;

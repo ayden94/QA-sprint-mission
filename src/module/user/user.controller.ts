@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { asyncHandler } from '../asyncHandler';
 import {
 	getUser,
 	getUserFavoriteProduct,
@@ -60,10 +59,7 @@ const userRouters = Router();
  *
  */
 
-userRouters
-	.route('/me')
-	.get(asyncHandler(getUser))
-	.patch(asyncHandler(updateUser));
+userRouters.route('/me').get(getUser).patch(updateUser);
 
 /**
  * @openapi
@@ -94,7 +90,7 @@ userRouters
  *               $ref: '#/components/schemas/ErrorMessage'
  */
 
-userRouters.route('/me/password').patch(asyncHandler(updateUserPassword));
+userRouters.route('/me/password').patch(updateUserPassword);
 
 /**
  * @openapi
@@ -146,7 +142,7 @@ userRouters.route('/me/password').patch(asyncHandler(updateUserPassword));
  *
  */
 
-userRouters.route('/me/products').get(asyncHandler(getUserOwnedProduct));
-userRouters.route('/me/favorites').get(asyncHandler(getUserFavoriteProduct));
+userRouters.route('/me/products').get(getUserOwnedProduct);
+userRouters.route('/me/favorites').get(getUserFavoriteProduct);
 
 export default userRouters;

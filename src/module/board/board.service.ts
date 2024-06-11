@@ -8,46 +8,86 @@ import { Board_likes } from './repository/Board_likes';
 import { Board_dislikes } from './repository/Board_dislikes';
 import { Comment_create_onBoard } from '../comment/repository/Comment_create';
 import { Comment_findMany_onBoard } from '../comment/repository/Comment_findMany';
-import { authChecker } from '../../helper/authChecker';
+import { CreateBoardProps, PatchBoardProps } from './board.types';
+import { isLiked } from '../../helper/isLiked';
+import { User_findUnique } from '../user/repository/User_findUnique';
 
-export function getBoardList(req: Request, res: Response) {
+function getBoardList(req: Request, res: Response) {
 	Board_findMany(req, res);
 }
 
-export function getBoard(req: Request, res: Response) {
-	Board_findUnique(req, res);
+function getBoard(id: string) {
+	return Board_findUnique(id);
 }
 
-export function createBoard(req: Request, res: Response) {
-	authChecker(req);
-	Board_create(req, res);
+function createBoard(createBoardProps: CreateBoardProps, email: string) {
+	return Board_create(createBoardProps, email);
 }
 
-export function deleteBoard(req: Request, res: Response) {
-	authChecker(req);
-	Board_delete(req, res);
+async function deleteBoard(id: string) {
+	const board = await Board_findUnique(id);
+
+	if (board?.writer.id === id) {
+		await Board_delete(id);
+
+		return true;
+	} else {
+		return false;
+	}
 }
 
-export function updateBoard(req: Request, res: Response) {
-	authChecker(req);
-	Board_update(req, res);
+async function updateBoard(patchBoardProps: PatchBoardProps, id: string) {
+	const board = await Board_findUnique(id);
+
+	if (board?.writer.id === id) {
+		const updatedBoard = await Board_update(patchBoardProps, id);
+
+		return updatedBoard;
+	}
 }
 
-export function likeBoard(req: Request, res: Response) {
-	authChecker(req);
-	Board_likes(req, res);
+async function likeBoard(boardId: string, userEmail: string) {
+	const user = await User_findUnique(userEmail);
+
+	if (await isLiked(boardId, user)) {
+		throw new Error('이미 좋아요를 누르셨어요');
+	} else {
+		const result = await Board_likes(boardId, userEmail);
+
+		return result;
+	}
 }
 
-export function dislikeBoard(req: Request, res: Response) {
-	authChecker(req);
-	Board_dislikes(req, res);
+async function dislikeBoard(boardId: string, userEmail: string) {
+	const user = await User_findUnique(userEmail);
+
+	if (!(await isLiked(boardId, user))) {
+		throw new Error('이미 좋아요를 해제하셨어요');
+	} else {
+		const result = await Board_dislikes(boardId, userEmail);
+
+		return result;
+	}
 }
 
-export function createComment(req: Request, res: Response) {
-	authChecker(req);
+function createComment(req: Request, res: Response) {
 	Comment_create_onBoard(req, res);
 }
 
 export function getCommentList(req: Request, res: Response) {
 	Comment_findMany_onBoard(req, res);
 }
+
+const boardService = {
+	createBoard,
+	createComment,
+	deleteBoard,
+	dislikeBoard,
+	getBoard,
+	getBoardList,
+	getCommentList,
+	likeBoard,
+	updateBoard,
+};
+
+export default boardService;
