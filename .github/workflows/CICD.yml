@@ -25,14 +25,14 @@ jobs:
       - name: ⚙️ Create .env file
         run: |
             touch ${{ env.ENV_PATH }}
-            echo DATABASE_URL=${{ env.DATABASE_URL }} >> ${{ env.ENV_PATH }}
-            echo PORT=${{ env.PORT }} >> ${{ env.ENV_PATH }}
-            echo JWT_SECRET=${{ env.JWT_SECRET }} >> ${{ env.ENV_PATH }}
-            echo JWT_SECRET_REFRESH=${{ env.JWT_SECRET_REFRESH }} >> ${{ env.ENV_PATH }}
-            echo AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} >> ${{ env.ENV_PATH }}
-            echo AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} >> ${{ env.ENV_PATH }}
-            echo AWS_REGION=${{ env.AWS_REGION }} >> ${{ env.ENV_PATH }}
-            echo S3_BUCKET_NAME=${{ env.S3_BUCKET_NAME }} >> ${{ env.ENV_PATH }}
+            echo DATABASE_URL=${{ secrets.DATABASE_URL }} >> ${{ env.ENV_PATH }}
+            echo PORT=${{ secrets.PORT }} >> ${{ env.ENV_PATH }}
+            echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> ${{ env.ENV_PATH }}
+            echo JWT_SECRET_REFRESH=${{ secrets.JWT_SECRET_REFRESH }} >> ${{ env.ENV_PATH }}
+            echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} >> ${{ env.ENV_PATH }}
+            echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} >> ${{ env.ENV_PATH }}
+            echo AWS_REGION=${{ secrets.AWS_REGION }} >> ${{ env.ENV_PATH }}
+            echo S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }} >> ${{ env.ENV_PATH }}
       
       - name: 📦 Zip project files
         run: zip -r ./$GITHUB_SHA.zip .
@@ -40,8 +40,8 @@ jobs:
       - name: 🌎 Access to AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
           
       - name: 🚛 Upload to S3
