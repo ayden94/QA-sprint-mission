@@ -1,0 +1,54 @@
+name: 🚀 Deploy workflow on production environment
+
+on:
+  pull_request:
+    branches: [main]
+      types: [closed]
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true
+    env:
+      ENV_PATH: .env
+      S3_BUCKET_NAME: backend-image-dev
+      DEPLOYMENT_GROUP_NAME: Codeit-Backend-CICD-release-group
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: ✅ Checkout branch
+        uses: actions/checkout@v3
+
+      - name: 🗂️ Make config folder
+        run: mkdir -p config
+
+      - name: ⚙️ Create .env file
+        run: |
+            touch ${{ env.ENV_PATH }}
+            echo DATABASE_URL=${{ env.DATABASE_URL }} >> ${{ env.ENV_PATH }}
+            echo PORT=${{ env.PORT }} >> ${{ env.ENV_PATH }}
+            echo JWT_SECRET=${{ env.JWT_SECRET }} >> ${{ env.ENV_PATH }}
+            echo JWT_SECRET_REFRESH=${{ env.JWT_SECRET_REFRESH }} >> ${{ env.ENV_PATH }}
+            echo AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} >> ${{ env.ENV_PATH }}
+            echo AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} >> ${{ env.ENV_PATH }}
+            echo AWS_REGION=${{ env.AWS_REGION }} >> ${{ env.ENV_PATH }}
+            echo S3_BUCKET_NAME=${{ env.S3_BUCKET_NAME }} >> ${{ env.ENV_PATH }}
+      
+      - name: 📦 Zip project files
+         run: zip -r ./$GITHUB_SHA.zip .
+      
+      - name: 🌎 Access to AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+          
+      - name: 🚛 Upload to S3
+         run: aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.zip s3://${{ env.S3_BUCKET_NAME }}/$GITHUB_SHA.zip
+         
+      - name: 🚀 Deploy to EC2 with CodeDeploy
+         run: aws deploy create-deployment
+             --application-name codedeploy-app
+             --deployment-config-name CodeDeployDefault.AllAtOnce
+             --deployment-group-name ${{ env.DEPLOYMENT_GROUP_NAME }}
+             --s3-location bucket=${{ env.S3_BUCKET_NAME }},bundleType=zip,key=$GITHUB_SHA.zip
