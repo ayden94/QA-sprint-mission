@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import boardService from './board.service';
 import { authChecker } from '../../middleware/authChecker';
 import { requestChecker } from '../../middleware/requestChecker';
 import { CreateBoard, PatchBoard } from './board.structs';
@@ -7,8 +6,15 @@ import { Uuid } from '../../helper/Structs';
 import { FindBoardsProps } from './board.types';
 import { GetCommentProps } from '../comment/comment.types';
 import commentService from '../comment/comment.service';
+import { BoardService } from './board.service';
+import { BoardRepository } from './board.repository';
+import { PrismaClient } from '@prisma/client';
 
 const boardRoutes = Router();
+
+const prisma = new PrismaClient();
+const boardRepository = new BoardRepository(prisma);
+const boardService = new BoardService(boardRepository);
 
 boardRoutes.get('/', async (req: Request, res: Response) => {
 	const {
