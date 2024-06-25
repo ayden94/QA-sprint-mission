@@ -37,8 +37,8 @@ model Product {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   // 연결 필드
-  owner         String
-  ownerId       User      @relation(fields: [owner], references: [id], name: "OwnedProducts", onDelete: Cascade)
+  ownerId       String
+  owner         User      @relation(fields: [ownerId], references: [id], name: "OwnedProducts", onDelete: Cascade)
   favoriteUser  User[]    @relation("FavoriteProducts")
   Comment       Comment[] @relation("commentOnProduct")
 }

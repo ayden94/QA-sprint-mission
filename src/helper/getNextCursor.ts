@@ -1,7 +1,7 @@
 import commentRepository from '../module/comment/comment.repository';
 
-export const getNextCursor = async (
-	comments: Array<{ [key in 'id']: string }>,
+export const getNextCursor = async <T extends { [key in 'id']: string }>(
+	comments: Array<T>,
 	takeNumber: number,
 	id: string,
 	where: 'boardId' | 'productId',

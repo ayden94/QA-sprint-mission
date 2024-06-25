@@ -20,11 +20,9 @@ const commonSelect = {
 	},
 };
 
-export class BoardRepository {
-	constructor(private prisma: PrismaClient) {}
-
+export class BoardRepository extends PrismaClient {
 	async Board_create(createBoardProps: CreateBoardProps, email: string) {
-		const board = await this.prisma.board.create({
+		const board = await this.board.create({
 			data: {
 				...createBoardProps,
 				likeCount: 0,
@@ -43,7 +41,7 @@ export class BoardRepository {
 		{ offset, limit, search }: FindBoardsProps,
 		orderBy: BoardOrderBy,
 	) {
-		const boards = await this.prisma.board.findMany({
+		const boards = await this.board.findMany({
 			where: {
 				OR: [
 					{
@@ -73,7 +71,7 @@ export class BoardRepository {
 	}
 
 	async Board_findUnique(id: string) {
-		const board = await this.prisma.board.findUnique({
+		const board = await this.board.findUnique({
 			where: { id },
 			select: {
 				...commonSelect,
@@ -89,7 +87,7 @@ export class BoardRepository {
 	}
 
 	async Board_update(patchBoardProps: PatchBoardProps, id: string) {
-		const updateBoard = await this.prisma.board.update({
+		const updateBoard = await this.board.update({
 			where: {
 				id,
 			},
@@ -100,13 +98,13 @@ export class BoardRepository {
 	}
 
 	async Board_delete(id: string) {
-		await this.prisma.board.delete({
+		await this.board.delete({
 			where: { id },
 		});
 	}
 
 	async Board_likes(id: string, email: string) {
-		const updatedBoard = await this.prisma.board.update({
+		const updatedBoard = await this.board.update({
 			where: {
 				id,
 			},
@@ -128,7 +126,7 @@ export class BoardRepository {
 	}
 
 	async Board_dislikes(id: string, email: string) {
-		const updatedBoard = await this.prisma.board.update({
+		const updatedBoard = await this.board.update({
 			where: {
 				id,
 			},

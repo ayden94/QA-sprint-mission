@@ -8,12 +8,10 @@ import { GetCommentProps } from '../comment/comment.types';
 import commentService from '../comment/comment.service';
 import { BoardService } from './board.service';
 import { BoardRepository } from './board.repository';
-import { PrismaClient } from '@prisma/client';
 
 const boardRoutes = Router();
 
-const prisma = new PrismaClient();
-const boardRepository = new BoardRepository(prisma);
+const boardRepository = new BoardRepository();
 const boardService = new BoardService(boardRepository);
 
 boardRoutes.get('/', async (req: Request, res: Response) => {

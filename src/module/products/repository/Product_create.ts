@@ -14,7 +14,7 @@ export async function Product_create(req: Request, res: Response) {
 		data: {
 			...productField,
 			favoriteCount: 0,
-			ownerId: {
+			owner: {
 				connect: {
 					email: req.cookies.email,
 				},
@@ -23,7 +23,7 @@ export async function Product_create(req: Request, res: Response) {
 		select: {
 			createdAt: true,
 			favoriteCount: true,
-			ownerId: {
+			owner: {
 				select: {
 					id: true,
 				},
